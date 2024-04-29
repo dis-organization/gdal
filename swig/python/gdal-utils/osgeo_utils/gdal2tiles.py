@@ -1831,6 +1831,12 @@ def optparse_init() -> optparse.OptionParser:
         help="Disable messages and status to stdout",
     )
     p.add_option(
+      "--allow-numeric", 
+      action="store_true",
+      dest = "allow_numeric",
+      help = "Allow numeric input to write tiles with floating point or integer type",
+    )
+    p.add_option(
         "--processes",
         dest="nb_processes",
         type="int",
@@ -1854,7 +1860,7 @@ def optparse_init() -> optparse.OptionParser:
     p.add_option(
         "--tiledriver",
         dest="tiledriver",
-        choices=["PNG", "WEBP", "JPEG"],
+        choices=["PNG", "WEBP", "JPEG", "GTiff"],
         default="PNG",
         type="choice",
         help="which tile driver to use for the tiles",
@@ -2215,6 +2221,8 @@ class GDAL2Tiles(object):
             self.tileext = "png"
         elif options.tiledriver == "WEBP":
             self.tileext = "webp"
+        elif options.tiledriver == "GTiff":
+            self.tileext = "tif"
         else:
             self.tileext = "jpg"
         if options.mpi:
@@ -2308,9 +2316,9 @@ class GDAL2Tiles(object):
                 "gdal2tiles temp.vrt" % self.input_file,
             )
 
-        if input_dataset.GetRasterBand(1).DataType != gdal.GDT_Byte:
+        if (input_dataset.GetRasterBand(1).DataType != gdal.GDT_Byte) and (not self.options.allow_numeric):
             exit_with_error(
-                "Please convert this file to 8-bit and run gdal2tiles on the result.",
+                "Please convert this file to 8-bit and run gdal2tiles on the result, or use '--allow-numeric' and '--tiledriver=GTiff'.",
                 "To scale pixel values you can use:\n"
                 "gdal_translate -of VRT -ot Byte -scale %s temp.vrt\n"
                 "then run:\n"
